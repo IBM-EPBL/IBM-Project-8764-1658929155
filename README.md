@@ -23,8 +23,8 @@ Smart Lender - Applicant Credibility Prediction for Loan Approval
 
 Team Lead - RAGHUL R
 
-Team Member - PRABHAKARAN S
+Team Member 1 - PRABHAKARAN S
 
-Team Member - RAGHUL D
+Team Member 2 - RAGHUL D
 
-Team Member - RAAHULL R
+Team Member 3 - RAAHULL R
