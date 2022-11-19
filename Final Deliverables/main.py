@@ -1,72 +1,102 @@
-from flask import Flask, render_template,request   
-import numpy as np
-import pandas
-import pickle
+from flask import Flask, render_template, request
 import requests
-
-# NOTE: you must manually set API_KEY below using information retrieved from your IBM Cloud account.
-API_KEY = "gty1PYR_T522sN6_r51HL2g88kxNxhyQXGVp5uPGmGFC"
+API_KEY = "_C1hxAGknUXtQEw2nUiKae4TxLkfB0ty6lZfiPPYzm7h"
 token_response = requests.post('https://iam.cloud.ibm.com/identity/token', data={"apikey":
- API_KEY, "grant_type": 'urn:ibm:params:oauth:grant-type:apikey'})
+API_KEY, "grant_type": 'urn:ibm:params:oauth:grant-type:apikey'})
 mltoken = token_response.json()["access_token"]
-
 header = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + mltoken}
 
 
-
-
-
-
-
 app = Flask(__name__)
-model = pickle.load(open(r'rdf.pkl','rb'))
-@app.route("/", methods=['GET', 'POST'])
-def home():
-    return render_template("home.html")
-    
-@app.route("/predict",methods=['POST','GET'])
+
+
+
+@app.route('/')
+def Home():
+    return render_template('home.html')
+
+@app.route('/predict.html')
+
+@app.route('/predict',methods = ['POST','GET'])
 def predict():
-    if request.method == 'POST':
-        project_name=request.form['full-name']
-        print(project_name)
-    return render_template("predict.html",project_name=project_name)
+    if request.method == "POST":
+        gender = request.form['genderBox']
+        married = request.form['maritalBox']
+        dependents = request.form['dependents']
+        education = request.form['educationBox']
+        employment = request.form['employmentBackground']
+        applicant_income = request.form['applicantIncomeBox']
+        coapplicant_income = request.form['coApplicantIncomeBox']
+        loan_amount = request.form['laonAmtBox']
+        loan_amount_term = request.form['laonAmtTermBox']
+        credit_history = request.form['CHBox']
+        prop_area = request.form['propertyAreaBox']
 
-@app.route("/success",methods=['POST','GET'])
-def evaluate():
-    input_feature = [int(x) for x in request.form.values()]
-    print(input_feature)
-    # input_feature=[np.array(input_feature)]
-    print(input_feature)
-    names = ['Gender', 'Married', 'Dependents', 'Education', 'Self Employed', 'Applicant Income', 'Coapplicant Income', 'Loan Amount', 'Loan_Amount_Term', 'Credit_History', 'Property_Area']
+        if gender == 'Male':
+            gender = 1
+        else:
+            gender = 0
 
-    # NOTE: manually define and pass the array(s) of values to be scored in the next line
-    payload_scoring = {"input_data": [{"fields": [names],
-                                       "values": [input_feature]}]}
+        if married == 'Yes':
+            married = 1
+        else:
+            married = 0
 
-    response_scoring = requests.post(
-        'https://us-south.ml.cloud.ibm.com/ml/v4/deployments/a05131f3-dcb8-46cd-bf08-1c2ecf28cc86/predictions?version=2022-11-13',
-        json=payload_scoring,
+        if dependents == '0':
+            dependents = 0
+        elif dependents == '1':
+            dependents = 1
+        elif dependents == '2':
+            dependents = 2
+        else:
+            dependents = 3
+
+        if education == 'Graduate':
+            education = 0
+        else:
+            education = 1
+
+        if employment == 'Yes':
+            employment = 1
+        else:
+            employment = 0
+        if credit_history=='Yes':
+            credit_history=1
+        else:
+            credit_history=0
+        if prop_area == 'Rural':
+            prop_area = 0
+        elif prop_area == 'Semiurban':
+            prop_area = 1
+        else:
+            prop_area = 2
+
+        
+        x=[[gender,married,dependents, education, employment,applicant_income,coapplicant_income,loan_amount, loan_amount_term,credit_history,prop_area]]
+
+        payload_scoring = {"input_data": [{"fields": [[gender,married,dependents, education, employment,applicant_income,coapplicant_income,loan_amount, loan_amount_term,credit_history,prop_area]], "values":x}]}
+        
+        
+        response_scoring = requests.post('https://us-south.ml.cloud.ibm.com/ml/v4/deployments/12295bb3-75b2-41c1-8bbb-a41a43b8ad19/predictions?version=2022-11-15', json=payload_scoring,
         headers={'Authorization': 'Bearer ' + mltoken})
-    predictions = response_scoring.json()
-    prediction = predictions['predictions'][0]['values'][0][0]
-    print("Scoring response")
-    print(response_scoring.json())
-    print(prediction)
 
-    # data = pandas.DataFrame(input_feature, columns=names)
-    # print(data)
-    # prediction=model.predict(data)
-    # print(prediction)
-    # prediction = int(prediction)
-    # print(type(prediction))
-    loan=1
-    if (prediction == 0):
-        loan=0
-        return render_template("success.html",result = "Loan will Not be Approved",loan=loan)
+
+        print("Scoring response")
+        prediction=response_scoring.json()
+        print(response_scoring.json())
+        if(prediction=="N"):
+            prediction="No"
+        else:
+            prediction="Yes"
+            return render_template("predict.html", prediction_text="Congratulations Your Loan Status is {}".format(prediction))
+
+        
     else:
-        return render_template("success.html",result = "Loan will be Approved",loan=loan)
-    return render_template("success.html")
+          return render_template("predict.html")
+    
 
     
+
+
 if __name__ == "__main__":
     app.run(debug=True)
